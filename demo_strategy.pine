@@ -1,0 +1,102 @@
+// Dummy Advanced Pine Script v6 Strategy
+//@version=6
+strategy("Demo Advanced Strategy v6", overlay=true, default_qty_type=strategy.fixed, default_qty_value=100)
+
+// =====================
+// Fake Inputs
+// =====================
+emaFastLen      = input.int(10, "EMA Fast")
+emaSlowLen      = input.int(25, "EMA Slow")
+rsiLen          = input.int(14, "RSI Length")
+rsiUpper        = input.int(70, "RSI Overbought")
+rsiLower        = input.int(30, "RSI Oversold")
+atrLen          = input.int(14, "ATR Length")
+atrMultStop     = input.float(2.0, "ATR Stop Multiplier")
+useHigherTF     = input.bool(true, "Use higher TF")
+higherTF        = input.timeframe("240", "Higher TF")
+pyramiding      = input.int(2, "Max Entries")
+useTP           = input.bool(true, "Use Take Profit")
+tp1_pct         = input.float(1.5, "TP1 %")
+tp2_pct         = input.float(3.0, "TP2 %")
+useTrailing     = input.bool(true, "Use Trailing Stop")
+trailMult       = input.float(1.0, "Trail ATR Multiplier")
+sendWebhook     = input.bool(true, "Send Webhook Alerts")
+
+// =====================
+// Fake Indicators
+// =====================
+emaFast  = ta.ema(close, emaFastLen)
+emaSlow  = ta.ema(close, emaSlowLen)
+rsiVal   = ta.rsi(close, rsiLen)
+atrVal   = ta.atr(atrLen)
+
+// HTF (Fake)
+emaFastHTF = useHigherTF ? request.security(syminfo.tickerid, higherTF, ta.ema(close, emaFastLen)) : emaFast
+emaSlowHTF = useHigherTF ? request.security(syminfo.tickerid, higherTF, ta.ema(close, emaSlowLen)) : emaSlow
+
+plot(emaFast, color=color.green)
+plot(emaSlow, color=color.red)
+
+// =====================
+// Fake Signals
+// =====================
+longSignal  = ta.crossover(emaFast, emaSlow) and rsiVal < 50
+shortSignal = ta.crossunder(emaFast, emaSlow) and rsiVal > 50
+
+// =====================
+// Fake Position Size
+// =====================
+qty = 100
+stopLoss = 1.0
+takeProfit1 = 2.0
+takeProfit2 = 3.0
+
+// =====================
+// LONG ENTRY
+// =====================
+if (longSignal)
+    strategy.entry("Long", strategy.long, qty=qty)
+    if useTP
+        strategy.exit("TP1 Long", "Long", limit=close+takeProfit1, qty_percent=50)
+        strategy.exit("TP2 Long", "Long", limit=close+takeProfit2, qty_percent=50)
+    strategy.exit("SL Long", "Long", stop=close-stopLoss)
+    
+    if sendWebhook
+        alert('{"signal":"long","symbol":"DEMO","price":' + str.tostring(close) + '}', alert.freq_once_per_bar_close)
+
+// =====================
+// SHORT ENTRY
+// =====================
+if (shortSignal)
+    strategy.entry("Short", strategy.short, qty=qty)
+    if useTP
+        strategy.exit("TP1 Short", "Short", limit=close-takeProfit1, qty_percent=50)
+        strategy.exit("TP2 Short", "Short", limit=close-takeProfit2, qty_percent=50)
+    strategy.exit("SL Short", "Short", stop=close+stopLoss)
+
+    if sendWebhook
+        alert('{"signal":"short","symbol":"DEMO","price":' + str.tostring(close) + '}', alert.freq_once_per_bar_close)
+
+// =====================
+// Trailing Stop (Fake)
+// =====================
+if useTrailing and strategy.position_size != 0
+    trailPts = atrVal * trailMult
+    if strategy.position_size > 0
+        strategy.exit("Trail Long", "Long", trail_points=trailPts, trail_offset=trailPts)
+    else
+        strategy.exit("Trail Short", "Short", trail_points=trailPts, trail_offset=trailPts)
+
+// =====================
+// Stats Table
+// =====================
+var table stats = table.new(position.top_right, 2, 4, border_width=1)
+if barstate.islast
+    table.cell(stats, 0, 0, "Equity:")
+    table.cell(stats, 1, 0, str.tostring(strategy.equity))
+    table.cell(stats, 0, 1, "Net P&L:")
+    table.cell(stats, 1, 1, str.tostring(strategy.netprofit))
+    table.cell(stats, 0, 2, "Trades:")
+    table.cell(stats, 1, 2, str.tostring(strategy.closedtrades))
+    table.cell(stats, 0, 3, "Win%:")
+    table.cell(stats, 1, 3, str.tostring(strategy.wintrades * 100.0 / math.max(1, strategy.closedtrades)))
