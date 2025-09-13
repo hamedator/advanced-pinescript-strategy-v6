@@ -1,6 +1,14 @@
 # Advanced Pine Script v6 Trading Strategy 🚀
 An advanced **TradingView Pine Script v6** strategy designed for professional traders.  
 The script integrates **multi-timeframe analysis**, technical indicators (EMA, RSI, ATR), and **dynamic risk management** to deliver reliable trading performance.
+---
+
+## Disclaimer
+
+The Pine Script code provided in this repository is a **demo version** intended for demonstration purposes only.  
+It is **not the full or original trading strategy** and does not include complete logic or advanced features.  
+The full version of the strategy is proprietary and not publicly shared.  
+This demo allows you to explore the structure, inputs, and basic functionality without exposing sensitive code or trading logic.
 
 ---
 
